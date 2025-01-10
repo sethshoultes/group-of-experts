@@ -1,0 +1,49 @@
+graph TD
+    subgraph UI[User Interface Layer]
+        DC[Discussion Canvas]
+        PC[Persona Configuration]
+        EC[Expert Configuration]
+        VS[Visualization & Synthesis]
+    end
+
+    subgraph Core[Core System]
+        EM[Expert Manager]
+        PM[Persona Manager]
+        MM[Memory Manager]
+        CM[Context Manager]
+        KV[Knowledge Validator]
+    end
+
+    subgraph Orchestration[Orchestration Layer]
+        MO[Moderator Orchestrator]
+        DS[Discussion Synthesizer]
+        IR[Insight Recorder]
+    end
+
+    subgraph Output[Output Processing]
+        SP[Summary Producer]
+        IG[Insight Generator]
+        DA[Decision Analyzer]
+    end
+
+    DC --> MO
+    PC --> PM
+    EC --> EM
+    
+    MO --> MM
+    MO --> CM
+    
+    EM --> KV
+    PM --> KV
+    
+    MM --> DS
+    CM --> DS
+    
+    DS --> IR
+    IR --> SP
+    IR --> IG
+    IR --> DA
+    
+    SP --> VS
+    IG --> VS
+    DA --> VS

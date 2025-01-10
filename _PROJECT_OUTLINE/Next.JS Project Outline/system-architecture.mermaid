@@ -1,0 +1,41 @@
+flowchart TD
+    subgraph Client[Client Layer]
+        UI[Next.js UI]
+        WS[WebSocket Client]
+        SC[State Context]
+    end
+
+    subgraph Server[Server Layer]
+        API[API Routes]
+        WSS[WebSocket Server]
+        Queue[Message Queue]
+    end
+
+    subgraph AI[AI Layer]
+        AM[AI Manager]
+        CP[Claude Processor]
+        GP[GPT Processor]
+        Ctx[Context Manager]
+    end
+
+    subgraph Data[Data Layer]
+        DB[(Database)]
+        Cache[(Redis Cache)]
+        Vec[(Vector Store)]
+    end
+
+    UI --> API
+    UI <--> WS
+    WS <--> WSS
+    
+    API --> Queue
+    WSS --> Queue
+    
+    Queue --> AM
+    AM --> CP
+    AM --> GP
+    AM <--> Ctx
+    
+    Ctx --> Vec
+    AM --> DB
+    AM --> Cache

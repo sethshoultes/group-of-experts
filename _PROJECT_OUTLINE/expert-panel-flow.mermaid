@@ -1,0 +1,30 @@
+flowchart TD
+    PM[Product Manager] --> M[AI Moderator]
+    M --> R[Round Table Discussion]
+    
+    subgraph ExpertPanel[Expert Panel]
+        TE[Technical Expert]
+        UX[UX Researcher]
+        SE[Security Expert]
+        BE[Business Expert]
+        DE[Domain Expert]
+    end
+    
+    subgraph Personas[User Personas]
+        P1[Power User]
+        P2[Novice User]
+        P3[Enterprise User]
+        P4[Mobile User]
+    end
+    
+    R --> ExpertPanel
+    R --> Personas
+    
+    ExpertPanel --> A[Analysis & Synthesis]
+    Personas --> A
+    
+    A --> O[Outputs]
+    O --> FR[Feature Requirements]
+    O --> RI[Risk Analysis]
+    O --> MI[Market Insights]
+    O --> PP[Priority Proposals]
