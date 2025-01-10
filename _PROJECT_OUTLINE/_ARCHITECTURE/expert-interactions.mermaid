@@ -1,0 +1,25 @@
+flowchart TD
+    subgraph InitialPhase
+        TP[Technical Planning] --> SA[Security Assessment]
+        SA --> BA[Business Analysis]
+    end
+
+    subgraph UserPhase
+        BA --> UX[UX Research]
+        UX --> PS[Product Strategy]
+    end
+
+    subgraph ValidationPhase
+        PS --> TA[Technical Architecture]
+        TA --> SE[Security Evaluation]
+        SE --> BV[Business Validation]
+    end
+
+    subgraph Rules
+        direction LR
+        R1[Sequential Responses]
+        R2[Cross-validation]
+        R3[Conflict Resolution]
+    end
+
+    BV --> Rules

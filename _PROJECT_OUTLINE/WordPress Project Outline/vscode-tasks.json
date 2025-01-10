@@ -1,0 +1,47 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Setup Development Environment",
+            "type": "shell",
+            "command": "mkdir -p admin/js admin/views includes public/js public/css tests && touch ai-expert-panel.php uninstall.php",
+            "problemMatcher": []
+        },
+        {
+            "label": "Install Dependencies",
+            "type": "shell",
+            "command": "composer require anthropic/anthropic-php && npm install @wordpress/scripts",
+            "problemMatcher": []
+        },
+        {
+            "label": "Build Assets",
+            "type": "npm",
+            "script": "build",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "Watch Assets",
+            "type": "npm",
+            "script": "start",
+            "problemMatcher": []
+        },
+        {
+            "label": "Run Tests",
+            "type": "shell",
+            "command": "composer test",
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "Create Release",
+            "type": "shell",
+            "command": "npm run build && zip -r ai-expert-panel.zip . -x \"node_modules/*\" \"tests/*\"",
+            "problemMatcher": []
+        }
+    ]
+}
