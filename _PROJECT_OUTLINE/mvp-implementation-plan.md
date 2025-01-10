@@ -1,6 +1,6 @@
 # Group of Experts System - MVP Implementation Plan
 
-## Phase 1: Foundation (Weeks 1-2)
+## Phase 1: Foundation
 
 ### Expert Profile System
 - Define base Expert interface and core attributes
@@ -48,7 +48,7 @@ interface DiscussionContext {
 }
 ```
 
-## Phase 2: Orchestration (Weeks 3-4)
+## Phase 2: Orchestration 
 
 ### Moderator System
 - Implement basic moderator logic
@@ -79,7 +79,7 @@ interface ModeratorRule {
 }
 ```
 
-## Phase 3: Integration & Output (Weeks 5-6)
+## Phase 3: Integration & Output
 
 ### UI Components
 - Build expert configuration interface
