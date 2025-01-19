@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { apiDebugger } from './api';
 import type { User, ApiKey, AdminUser } from '../types';
 
 interface ValidationResponse {
@@ -8,7 +9,7 @@ interface ValidationResponse {
 
 async function validateClaudeKey(key: string): Promise<ValidationResponse> {
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const response = await apiDebugger.fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -39,7 +40,7 @@ async function validateClaudeKey(key: string): Promise<ValidationResponse> {
 
 async function validateOpenAIKey(key: string): Promise<ValidationResponse> {
   try {
-    const response = await fetch('https://api.openai.com/v1/models', {
+    const response = await apiDebugger.fetch('https://api.openai.com/v1/models', {
       headers: {
         'Authorization': `Bearer ${key}`
       }
@@ -68,7 +69,7 @@ export async function validateApiKey(provider: 'claude' | 'openai', key: string)
   // In production, use Netlify Functions
   if (import.meta.env.PROD) {
     try {
-      const response = await fetch('/.netlify/functions/validate-key', {
+      const response = await apiDebugger.fetch('/.netlify/functions/validate-key', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

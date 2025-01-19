@@ -7,14 +7,11 @@ export async function getDiscussions(): Promise<Discussion[]> {
     .select(`
       *,
       messages:messages(*)
-    `)
-    .order('created_at', { ascending: false });
+    `);
 
   if (error) throw error;
   return data.map(discussion => ({
     ...discussion,
-    createdAt: new Date(discussion.created_at),
-    updatedAt: new Date(discussion.updated_at),
     messages: discussion.messages.map((message: any) => ({
       ...message,
       timestamp: new Date(message.created_at)
@@ -36,8 +33,6 @@ export async function getDiscussion(id: string): Promise<Discussion> {
   
   return {
     ...data,
-    createdAt: new Date(data.created_at),
-    updatedAt: new Date(data.updated_at),
     messages: data.messages.map((message: any) => ({
       ...message,
       timestamp: new Date(message.created_at)
@@ -68,8 +63,6 @@ export async function createDiscussion(topic: string, description: string): Prom
 
   return {
     ...data,
-    createdAt: new Date(data.created_at),
-    updatedAt: new Date(data.updated_at),
     messages: []
   };
 }

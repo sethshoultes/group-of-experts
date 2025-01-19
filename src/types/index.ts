@@ -8,9 +8,11 @@ export interface Expert {
 
 export interface Message {
   id: string;
-  expertId: string;
+  discussion_id: string;
+  expert_role: string;
   content: string;
-  timestamp: Date;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Discussion {
@@ -18,9 +20,9 @@ export interface Discussion {
   topic: string;
   description: string;
   status: 'active' | 'completed';
-  messages: Message[];
-  createdAt: Date;
-  updatedAt: Date;
+  messages: Array<Message & { timestamp: Date }>;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface ApiKey {

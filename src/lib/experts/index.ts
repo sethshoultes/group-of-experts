@@ -1,10 +1,34 @@
 import { expertRoles } from './roles';
 import { supabase } from '../supabase';
+import { apiDebugger } from '../api';
+import type { Message, Discussion } from '../types';
 import type { ExpertRole } from './roles';
 
 export interface ExpertResponse {
   role: string;
   content: string;
+}
+
+const MAX_CONTEXT_MESSAGES = 5;
+
+async function getDiscussionContext(discussionId: string): Promise<Message[]> {
+  const { data, error } = await supabase
+    .from('messages')
+    .select('*')
+    .eq('discussion_id', discussionId)
+    .order('created_at', { ascending: false })
+    .limit(MAX_CONTEXT_MESSAGES);
+
+  if (error) throw error;
+  return data.reverse();
+}
+
+function formatContextMessages(messages: Message[]) {
+  const formattedMessages = messages.map(msg => ({
+    role: msg.expert_role === 'user' ? 'user' : 'assistant',
+    content: msg.content
+  }));
+  return formattedMessages;
 }
 
 export async function getAvailableExperts(): Promise<ExpertRole[]> {
@@ -36,6 +60,9 @@ export async function getExpertResponse(
     throw new Error('Expert not found');
   }
 
+  // Get previous messages for context
+  const contextMessages = await getDiscussionContext(discussionId);
+
   // Get user's active API key
   const { data: apiKeys, error: apiKeyError } = await supabase
     .from('api_keys')
@@ -53,8 +80,14 @@ export async function getExpertResponse(
   try {
     let response;
     
+    const messages = formatContextMessages(contextMessages, expert);
+    messages.push({
+      role: 'user',
+      content: userMessage
+    });
+
     if (apiKey.provider === 'claude') {
-      response = await fetch('https://api.anthropic.com/v1/messages', {
+      response = await apiDebugger.fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -63,21 +96,12 @@ export async function getExpertResponse(
         },
         body: JSON.stringify({
           model: 'claude-3-haiku-20240307',
-          messages: [
-            {
-              role: 'system',
-              content: expert.systemPrompt
-            },
-            {
-              role: 'user',
-              content: userMessage
-            }
-          ],
+          messages,
           max_tokens: 1000
         })
       });
     } else {
-      response = await fetch('https://api.openai.com/v1/chat/completions', {
+      response = await apiDebugger.fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -85,16 +109,7 @@ export async function getExpertResponse(
         },
         body: JSON.stringify({
           model: 'gpt-4',
-          messages: [
-            {
-              role: 'system',
-              content: expert.systemPrompt
-            },
-            {
-              role: 'user',
-              content: userMessage
-            }
-          ],
+          messages,
           max_tokens: 1000
         })
       });

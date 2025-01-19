@@ -1,15 +1,23 @@
 # Version History
 
-## Current Version: 0.4.0.0-beta
+## Current Version: 0.5.0.0-beta
 
 ### Version Components
 - **major (0)**: Pre-1.0 development
-  **minor (4)**: Enhanced features and optimizations
+  **minor (5)**: Testing and optimization phase
 - **patch (0)**: No fixes yet
 - **dev (0)**: Stable iteration
   **stage**: beta (feature complete, testing)
 
 ### Version Details
+
+#### 0.5.0.0-beta (Current)
+- Added debugging system with debug panel
+- Enhanced error handling and logging
+- Added admin user support
+- Improved API request tracking
+- Fixed message duplication issues
+- Added comprehensive type safety
 
 #### 0.4.0.0-beta (Current)
 - Enhanced error handling system

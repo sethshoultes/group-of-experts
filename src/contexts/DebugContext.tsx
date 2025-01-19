@@ -10,7 +10,7 @@ interface DebugContextType {
 }
 
 const initialState: DebugState = {
-  enabled: false,
+  enabled: true,
   panelVisible: false,
   logs: []
 };

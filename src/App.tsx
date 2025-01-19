@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { DebugProvider } from './contexts/DebugContext';
 import Header from './components/layout/Header';
-import DebugPanel from './components/admin/DebugPanel';
+import DebugPanel from './components/debug/DebugPanel';
 import DiscussionView from './components/discussion/DiscussionView';
 import LoginForm from './components/auth/LoginForm';
 import RegisterForm from './components/auth/RegisterForm';

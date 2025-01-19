@@ -1,15 +1,21 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Users, LogOut, Settings, Bug } from 'lucide-react';
+import { Users, LogOut, Bug } from 'lucide-react';
 import { signOut } from '../../lib/auth';
 import { useAuth } from '../../contexts/AuthContext';
 import { useDebug } from '../../contexts/DebugContext';
+import { apiDebugger } from '../../lib/api';
+import { useEffect } from 'react';
 
 export default function Header() {
   const { user } = useAuth();
-  const { debug, togglePanel } = useDebug();
+  const { debug, togglePanel, log } = useDebug();
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    apiDebugger.setDebugLog(log);
+  }, [log]);
 
   const handleSignOut = async () => {
     setLoading(true);
@@ -40,25 +46,14 @@ export default function Header() {
                 >
                   Profile
                 </Link>
-                {user?.role === 'admin' && (
-                  <>
-                    <Link
-                      to="/admin"
-                      className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"
-                    >
-                      <Settings className="h-4 w-4 inline-block mr-2" />
-                      Admin
-                    </Link>
-                    {debug.enabled && (
-                      <button
-                        onClick={togglePanel}
-                        className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"
-                      >
-                        <Bug className="h-4 w-4 inline-block mr-2" />
-                        Debug
-                      </button>
-                    )}
-                  </>
+                {debug.enabled && (
+                  <button
+                    onClick={togglePanel}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"
+                  >
+                    <Bug className="h-4 w-4 inline-block mr-2" />
+                    Debug
+                  </button>
                 )}
                 <Link
                   to="/discussions"
