@@ -39,4 +39,23 @@ export interface User {
   id: string;
   email: string;
   apiKeys: ApiKey[];
+  role?: 'admin' | 'user';
+}
+
+export interface AdminUser {
+  id: string;
+  user_id: string;
+  created_at: Date;
+  updated_at: Date;
+}
+
+export interface DebugState {
+  enabled: boolean;
+  panelVisible: boolean;
+  logs: Array<{
+    timestamp: Date;
+    type: 'info' | 'error' | 'warn';
+    message: string;
+    data?: any;
+  }>;
 }

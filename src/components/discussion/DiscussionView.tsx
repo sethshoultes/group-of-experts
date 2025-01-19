@@ -64,20 +64,22 @@ export default function DiscussionView() {
     e.preventDefault();
     if (!message.trim() || !id || sending || !selectedExpert) return;
 
+    const currentMessage = message;
     setSending(true);
     setError(null);
+    setMessage(''); // Clear input early for better UX
 
     try {
       // Add user message
-      await addMessage(id, 'user', message);
+      await addMessage(id, 'user', currentMessage);
       
       // Get expert response
-      const response = await getExpertResponse(id, selectedExpert, message);
+      const response = await getExpertResponse(id, selectedExpert, currentMessage);
       
       // Add expert message
       await addMessage(id, response.role, response.content);
       
-      setMessage('');
+      // Reload discussion to get the new messages
       await loadDiscussion(id);
     } catch (err) {
       setError('Failed to send message');
@@ -170,7 +172,7 @@ export default function DiscussionView() {
             {discussion.messages.map((message) => (
               <div
                 key={message.id}
-                className={`flex ${
+                className={`flex mb-4 ${
                   message.expertRole === 'user' ? 'justify-end' : 'justify-start'
                 }`}
               >
@@ -181,6 +183,11 @@ export default function DiscussionView() {
                       : 'bg-gray-100 text-gray-900'
                   }`}
                 >
+                  {message.expertRole !== 'user' && (
+                    <div className="text-xs text-gray-500 mb-1">
+                      {experts.find(e => e.id === message.expertRole)?.name || 'Expert'}
+                    </div>
+                  )}
                   <p className="text-sm">{message.content}</p>
                   <p className="text-xs mt-1 opacity-75">
                     {new Date(message.timestamp).toLocaleTimeString()}

@@ -1,15 +1,22 @@
 # Version History
 
-## Current Version: 0.3.0.0-alpha
+## Current Version: 0.4.0.0-beta
 
 ### Version Components
 - **major (0)**: Pre-1.0 development
-  **minor (3)**: Expert system integration
+  **minor (4)**: Enhanced features and optimizations
 - **patch (0)**: No fixes yet
 - **dev (0)**: Stable iteration
-- **stage**: alpha (early development)
+  **stage**: beta (feature complete, testing)
 
 ### Version Details
+
+#### 0.4.0.0-beta (Current)
+- Enhanced error handling system
+- Response streaming implementation
+- Performance optimizations
+- User experience improvements
+- Comprehensive testing suite
 
 #### 0.3.0.0-alpha (Current)
 - Implemented expert system integration
@@ -35,13 +42,6 @@
 - Supabase integration started
 
 ### Upcoming Versions
-
-#### 0.4.0.0-beta
-- Enhanced error handling
-- Response streaming
-- Expert role templates
-- Performance optimizations
-- User experience improvements
 
 #### 0.5.0.0-beta
 - Testing and optimization

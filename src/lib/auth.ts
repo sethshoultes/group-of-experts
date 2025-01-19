@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import type { User, ApiKey } from '../types';
+import type { User, ApiKey, AdminUser } from '../types';
 
 interface ValidationResponse {
   valid: boolean;
@@ -119,7 +119,22 @@ export async function signOut() {
 export async function getCurrentUser() {
   const { data: { user }, error } = await supabase.auth.getUser();
   if (error) throw error;
-  return user;
+  
+  // Check if user is admin
+  if (user) {
+    const { data: adminUser } = await supabase
+      .from('admin_users')
+      .select('*')
+      .eq('user_id', user.id)
+      .single();
+
+    return {
+      ...user,
+      role: adminUser ? 'admin' : 'user'
+    };
+  }
+  
+  return null;
 }
 
 export async function getUserApiKeys(): Promise<ApiKey[]> {

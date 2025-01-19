@@ -1,5 +1,5 @@
 /*
-  # Add discussions and messages tables
+  # Create Discussion System Tables
 
   1. New Tables
     - `discussions`
@@ -21,7 +21,11 @@
 
   2. Security
     - Enable RLS on both tables
-    - Add policies for authenticated users to manage their own discussions and messages
+    - Add policies for authenticated users to:
+      - View their own discussions and associated messages
+      - Create new discussions and messages
+      - Update discussion status
+      - Delete their own discussions (cascades to messages)
 */
 
 -- Create discussions table
@@ -50,19 +54,27 @@ ALTER TABLE discussions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
 
 -- Create indexes
-CREATE INDEX idx_discussions_user_id ON discussions(user_id);
-CREATE INDEX idx_messages_discussion_id ON messages(discussion_id);
+CREATE INDEX IF NOT EXISTS idx_discussions_user_id ON discussions(user_id);
+CREATE INDEX IF NOT EXISTS idx_messages_discussion_id ON messages(discussion_id);
 
 -- Create updated_at triggers
-CREATE TRIGGER update_discussions_updated_at
-  BEFORE UPDATE ON discussions
-  FOR EACH ROW
-  EXECUTE FUNCTION update_updated_at_column();
+DO $$ BEGIN
+  CREATE TRIGGER update_discussions_updated_at
+    BEFORE UPDATE ON discussions
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
 
-CREATE TRIGGER update_messages_updated_at
-  BEFORE UPDATE ON messages
-  FOR EACH ROW
-  EXECUTE FUNCTION update_updated_at_column();
+DO $$ BEGIN
+  CREATE TRIGGER update_messages_updated_at
+    BEFORE UPDATE ON messages
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
 
 -- Create RLS policies for discussions
 CREATE POLICY "Users can view their own discussions"
