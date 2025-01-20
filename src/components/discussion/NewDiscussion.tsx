@@ -16,8 +16,8 @@ export default function NewDiscussion() {
     setError(null);
 
     try {
-      await createDiscussion(topic, description);
-      navigate('/', { replace: true });
+      const discussion = await createDiscussion(topic, description);
+      navigate(`/discussions/${discussion.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create discussion');
     } finally {

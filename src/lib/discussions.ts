@@ -76,6 +76,30 @@ export async function updateDiscussionStatus(id: string, status: 'active' | 'com
   if (error) throw error;
 }
 
+export async function deleteDiscussion(id: string): Promise<void> {
+  // Get discussion status first
+  const { data: discussion, error: fetchError } = await supabase
+    .from('discussions')
+    .select('status')
+    .eq('id', id)
+    .single();
+
+  if (fetchError) throw fetchError;
+  if (!discussion) throw new Error('Discussion not found');
+  
+  // Only allow deletion of completed discussions
+  if (discussion.status !== 'completed') {
+    throw new Error('Only completed discussions can be deleted');
+  }
+
+  const { error } = await supabase
+    .from('discussions')
+    .delete()
+    .eq('id', id);
+
+  if (error) throw error;
+}
+
 export async function addMessage(
   discussionId: string,
   expertRole: string,

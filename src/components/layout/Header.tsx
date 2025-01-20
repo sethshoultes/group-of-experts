@@ -41,12 +41,26 @@ export default function Header() {
             {user ? (
               <>
                 <Link
+                  to="/discussions/new"
+                  className="px-4 py-2 text-sm font-medium bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+                >
+                  New Discussion
+                </Link>
+                
+               
+                <Link
+                  to="/"
+                  className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"
+                >
+                  Discussions
+                </Link>
+                <Link
                   to="/profile"
                   className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"
                 >
                   Profile
                 </Link>
-                {debug.enabled && (
+                 {debug.enabled && (
                   <button
                     onClick={togglePanel}
                     className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"
@@ -55,18 +69,6 @@ export default function Header() {
                     Debug
                   </button>
                 )}
-                <Link
-                  to="/discussions"
-                  className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"
-                >
-                  Discussions
-                </Link>
-                <Link
-                  to="/discussions/new"
-                  className="px-4 py-2 text-sm font-medium bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
-                >
-                  New Discussion
-                </Link>
                 <button
                   onClick={handleSignOut}
                   disabled={loading}

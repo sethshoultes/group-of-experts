@@ -4,6 +4,11 @@ import { apiDebugger } from '../api';
 import type { Message, Discussion } from '../types';
 import type { ExpertRole } from './roles';
 
+interface FormattedMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
 export interface ExpertResponse {
   role: string;
   content: string;
@@ -23,11 +28,19 @@ async function getDiscussionContext(discussionId: string): Promise<Message[]> {
   return data.reverse();
 }
 
-function formatContextMessages(messages: Message[]) {
-  const formattedMessages = messages.map(msg => ({
+function formatContextMessages(messages: Message[], expert: ExpertRole): FormattedMessage[] {
+  // Add system prompt as the first message
+  const formattedMessages: FormattedMessage[] = [{
+    role: 'assistant',
+    content: expert.systemPrompt
+  }];
+
+  // Add conversation history
+  messages.forEach(msg => formattedMessages.push({
     role: msg.expert_role === 'user' ? 'user' : 'assistant',
     content: msg.content
   }));
+
   return formattedMessages;
 }
 
@@ -86,34 +99,24 @@ export async function getExpertResponse(
       content: userMessage
     });
 
-    if (apiKey.provider === 'claude') {
-      response = await apiDebugger.fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey.key,
-          'anthropic-version': '2023-06-01'
-        },
-        body: JSON.stringify({
-          model: 'claude-3-haiku-20240307',
-          messages,
-          max_tokens: 1000
-        })
-      });
-    } else {
-      response = await apiDebugger.fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey.key}`
-        },
-        body: JSON.stringify({
-          model: 'gpt-4',
-          messages,
-          max_tokens: 1000
-        })
-      });
-    }
+    response = await apiDebugger.fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey.key}`
+      },
+      body: JSON.stringify({
+        model: 'gpt-4',
+        messages: [
+          {
+            role: 'system',
+            content: expert.systemPrompt
+          },
+          ...messages.filter(msg => msg.role !== 'assistant' || msg.content !== expert.systemPrompt)
+        ],
+        max_tokens: 1000
+      })
+    });
 
     if (!response.ok) {
       const error = await response.json();
@@ -121,9 +124,7 @@ export async function getExpertResponse(
     }
 
     const data = await response.json();
-    const content = apiKey.provider === 'claude' 
-      ? data.content[0].text
-      : data.choices[0].message.content;
+    const content = data.choices[0].message.content;
 
     // Update last_used timestamp for the API key
     await supabase

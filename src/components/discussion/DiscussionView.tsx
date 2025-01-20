@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Send, CheckCircle, XCircle, Loader } from 'lucide-react';
+import { ArrowLeft, Send, CheckCircle, XCircle, Loader, Maximize2, Minimize2 } from 'lucide-react';
 import { getDiscussion, updateDiscussionStatus, addMessage } from '../../lib/discussions';
 import { getAvailableExperts, getExpertResponse } from '../../lib/experts';
 import ExpertSelector from './ExpertSelector';
@@ -18,6 +18,8 @@ export default function DiscussionView() {
   const [experts, setExperts] = useState<ExpertRole[]>([]);
   const [selectedExpert, setSelectedExpert] = useState<string | null>(null);
   const [loadingExperts, setLoadingExperts] = useState(true);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (id) {
@@ -73,11 +75,11 @@ export default function DiscussionView() {
       // Add user message
       await addMessage(id, 'user', currentMessage);
       
-      // Get expert response
+      // Get expert response with selected expert role
       const response = await getExpertResponse(id, selectedExpert, currentMessage);
       
-      // Add expert message
-      await addMessage(id, response.role, response.content);
+      // Add expert message with the selected expert role
+      await addMessage(id, selectedExpert, response.content);
       
       // Reload discussion to get the new messages
       await loadDiscussion(id);
@@ -86,6 +88,32 @@ export default function DiscussionView() {
     } finally {
       setSending(false);
     }
+  };
+
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isFullscreen) {
+        setIsFullscreen(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [isFullscreen]);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  // Scroll to bottom when new messages are added
+  useEffect(() => {
+    if (discussion?.messages.length) {
+      scrollToBottom();
+    }
+  }, [discussion?.messages.length]);
+
+  const toggleFullscreen = () => {
+    setIsFullscreen(!isFullscreen);
   };
 
   if (loading) {
@@ -115,37 +143,58 @@ export default function DiscussionView() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="bg-white shadow rounded-lg">
-        <div className="px-4 py-5 sm:p-6">
+    <div className={`transition-all duration-200 ${
+      isFullscreen 
+        ? 'fixed inset-0 z-50 bg-white' 
+        : 'max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8'
+    }`}>
+      <div className={`bg-white shadow ${isFullscreen ? '' : 'rounded-lg'}`}>
+        <div className={`px-4 py-5 sm:p-6 flex flex-col ${
+          isFullscreen ? 'h-screen' : 'h-[calc(100vh-12rem)]'
+        }`}>
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center space-x-4">
-              <button
-                onClick={() => navigate('/')}
-                className="inline-flex items-center text-gray-600 hover:text-gray-900"
-              >
-                <ArrowLeft className="h-5 w-5" />
-              </button>
+              {!isFullscreen && (
+                <button
+                  onClick={() => navigate('/')}
+                  className="inline-flex items-center text-gray-600 hover:text-gray-900"
+                >
+                  <ArrowLeft className="h-5 w-5" />
+                </button>
+              )}
               <h2 className="text-xl font-semibold text-gray-900">{discussion.topic}</h2>
             </div>
-            <button
-              onClick={handleStatusToggle}
-              className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium ${
-                discussion.status === 'active'
-                  ? 'bg-green-100 text-green-800'
-                  : 'bg-gray-100 text-gray-800'
-              }`}
-            >
-              {discussion.status === 'active' ? (
-                <CheckCircle className="h-4 w-4 mr-1.5" />
-              ) : (
-                <XCircle className="h-4 w-4 mr-1.5" />
-              )}
-              {discussion.status === 'active' ? 'Active' : 'Completed'}
-            </button>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={handleStatusToggle}
+                className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium ${
+                  discussion.status === 'active'
+                    ? 'bg-green-100 text-green-800'
+                    : 'bg-gray-100 text-gray-800'
+                }`}
+              >
+                {discussion.status === 'active' ? (
+                  <CheckCircle className="h-4 w-4 mr-1.5" />
+                ) : (
+                  <XCircle className="h-4 w-4 mr-1.5" />
+                )}
+                {discussion.status === 'active' ? 'Active' : 'Completed'}
+              </button>
+              <button
+                onClick={toggleFullscreen}
+                className="p-2 text-gray-600 hover:text-gray-900 rounded-full hover:bg-gray-100"
+                title={isFullscreen ? 'Exit fullscreen (Esc)' : 'Enter fullscreen'}
+              >
+                {isFullscreen ? (
+                  <Minimize2 className="h-5 w-5" />
+                ) : (
+                  <Maximize2 className="h-5 w-5" />
+                )}
+              </button>
+            </div>
           </div>
 
-          <p className="text-gray-600 mb-6">{discussion.description}</p>
+          {!isFullscreen && <p className="text-gray-600 mb-6">{discussion.description}</p>}
 
           {error && (
             <div className="mb-4 rounded-md bg-red-50 p-4">
@@ -168,7 +217,7 @@ export default function DiscussionView() {
             </div>
           )}
 
-          <div className="space-y-4 mb-6">
+          <div className="space-y-4 flex-1 overflow-y-auto mb-6 pr-2">
             {discussion.messages.map((message) => (
               <div
                 key={message.id}
@@ -199,13 +248,14 @@ export default function DiscussionView() {
                       })()}
                     </div>
                   )}
-                  <p className="text-sm">{message.content}</p>
+                  <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                   <p className="text-xs mt-1 opacity-75">
                     {new Date(message.timestamp).toLocaleTimeString()}
                   </p>
                 </div>
               </div>
             ))}
+            <div ref={messagesEndRef} />
           </div>
 
           <form onSubmit={handleSendMessage} className="mt-4">

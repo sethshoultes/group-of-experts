@@ -28,7 +28,7 @@ export interface Discussion {
 export interface ApiKey {
   id: string;
   user_id: string;
-  provider: 'claude' | 'openai';
+  provider: 'openai';
   key: string;
   name: string;
   is_active: boolean;

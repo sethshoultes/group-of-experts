@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MessageSquarePlus } from 'lucide-react';
 import DiscussionCard from './DiscussionCard';
-import { getDiscussions } from '../../lib/discussions';
+import { getDiscussions, deleteDiscussion } from '../../lib/discussions';
 import type { Discussion } from '../../types';
 
 export default function Discussions() {
@@ -28,6 +28,15 @@ export default function Discussions() {
 
   const handleDiscussionClick = (id: string) => {
     navigate(`/discussions/${id}`);
+  };
+
+  const handleDeleteDiscussion = async (id: string) => {
+    try {
+      await deleteDiscussion(id);
+      setDiscussions(prev => prev.filter(d => d.id !== id));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete discussion');
+    }
   };
 
   if (loading) {
@@ -63,6 +72,7 @@ export default function Discussions() {
               key={discussion.id}
               discussion={discussion}
               onClick={handleDiscussionClick}
+              onDelete={handleDeleteDiscussion}
             />
           ))}
         </div>

@@ -135,10 +135,9 @@ export default function Profile() {
                 <select
                   id="provider"
                   value={newKey.provider}
-                  onChange={(e) => setNewKey({ ...newKey, provider: e.target.value as 'claude' | 'openai' })}
+                  onChange={(e) => setNewKey({ ...newKey, provider: e.target.value as 'openai' })}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                 >
-                  <option value="claude">Claude</option>
                   <option value="openai">OpenAI</option>
                 </select>
               </div>

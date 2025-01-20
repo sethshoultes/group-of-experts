@@ -7,37 +7,6 @@ interface ValidationResponse {
   error?: string;
 }
 
-async function validateClaudeKey(key: string): Promise<ValidationResponse> {
-  try {
-    const response = await apiDebugger.fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': key,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        messages: [{ role: 'user', content: 'Hello' }],
-        model: 'claude-3-haiku-20240307',
-        max_tokens: 1
-      })
-    });
-
-    if (response.status === 401) {
-      return { valid: false, error: 'Invalid API key' };
-    }
-    
-    if (!response.ok) {
-      const data = await response.json();
-      return { valid: false, error: data.error?.message || 'Validation failed' };
-    }
-
-    return { valid: true };
-  } catch (error) {
-    return { valid: false, error: 'Network error during validation' };
-  }
-}
-
 async function validateOpenAIKey(key: string): Promise<ValidationResponse> {
   try {
     const response = await apiDebugger.fetch('https://api.openai.com/v1/models', {
@@ -61,7 +30,7 @@ async function validateOpenAIKey(key: string): Promise<ValidationResponse> {
   }
 }
 
-export async function validateApiKey(provider: 'claude' | 'openai', key: string): Promise<ValidationResponse> {
+export async function validateApiKey(provider: 'openai', key: string): Promise<ValidationResponse> {
   if (!key.trim()) {
     return { valid: false, error: 'API key is required' };
   }
@@ -88,8 +57,7 @@ export async function validateApiKey(provider: 'claude' | 'openai', key: string)
     }
   }
 
-  // In development, validate directly
-  return provider === 'claude' ? validateClaudeKey(key) : validateOpenAIKey(key);
+  return validateOpenAIKey(key);
 }
 
 export async function signUp(email: string, password: string) {

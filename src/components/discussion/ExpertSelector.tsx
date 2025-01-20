@@ -1,6 +1,14 @@
 import React from 'react';
 import type { ExpertRole } from '../../lib/experts/roles';
 
+import { Blocks, Shield, Container } from 'lucide-react';
+
+const EXPERT_ICONS = {
+  blocks: Blocks,
+  shield: Shield,
+  container: Container
+};
+
 interface ExpertSelectorProps {
   experts: ExpertRole[];
   selectedExpert: string | null;
@@ -33,18 +41,32 @@ export default function ExpertSelector({ experts, selectedExpert, onSelect }: Ex
           className={`relative rounded-lg border p-4 cursor-pointer transition-colors ${
             selectedExpert === expert.id
               ? 'border-indigo-600 bg-indigo-50'
-              : 'border-gray-300 hover:border-indigo-400'
+              : 'border-gray-300 hover:border-indigo-400 hover:bg-gray-50'
           }`}
           onClick={() => onSelect(expert.id)}
         >
-          <div className="space-y-2">
-            <h3 className="text-lg font-medium text-gray-900">{expert.name}</h3>
+          <div className="space-y-3">
+            <div className="flex items-center space-x-3">
+              {(() => {
+                const Icon = EXPERT_ICONS[expert.icon as keyof typeof EXPERT_ICONS];
+                return Icon ? (
+                  <Icon className={`h-6 w-6 ${
+                    selectedExpert === expert.id ? 'text-indigo-600' : 'text-gray-400'
+                  }`} />
+                ) : null;
+              })()}
+              <h3 className="text-lg font-medium text-gray-900">{expert.name}</h3>
+            </div>
             <p className="text-sm text-gray-500">{expert.description}</p>
             <div className="flex flex-wrap gap-2">
               {expert.expertise.map((skill) => (
                 <span
                   key={skill}
-                  className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800"
+                  className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                    selectedExpert === expert.id
+                      ? 'bg-indigo-100 text-indigo-800'
+                      : 'bg-gray-100 text-gray-600'
+                  }`}
                 >
                   {skill}
                 </span>
