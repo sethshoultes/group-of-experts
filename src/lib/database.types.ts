@@ -36,6 +36,10 @@ export interface Database {
           topic: string
           description: string
           status: 'active' | 'completed'
+          expert_ids: string[]
+          discussion_mode: 'sequential' | 'parallel'
+          current_round: number
+          metadata: Json
           created_at: string
           updated_at: string
         }
@@ -64,6 +68,10 @@ export interface Database {
           discussion_id: string
           expert_role: string
           content: string
+          round: number
+          message_refs: Json
+          metadata: Json
+          response_order: number | null
           created_at: string
           updated_at: string
         }

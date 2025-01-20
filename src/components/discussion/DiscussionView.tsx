@@ -19,6 +19,7 @@ export default function DiscussionView() {
   const [selectedExpert, setSelectedExpert] = useState<string | null>(null);
   const [loadingExperts, setLoadingExperts] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [currentRound, setCurrentRound] = useState(1);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -59,6 +60,16 @@ export default function DiscussionView() {
       setDiscussion({ ...discussion, status: newStatus });
     } catch (err) {
       setError('Failed to update discussion status');
+    }
+  };
+
+  const handleAdvanceRound = async () => {
+    if (!discussion || !id) return;
+    try {
+      await updateDiscussionRound(id, discussion.current_round + 1);
+      await loadDiscussion(id);
+    } catch (err) {
+      setError('Failed to advance round');
     }
   };
 
@@ -114,6 +125,16 @@ export default function DiscussionView() {
 
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
+  };
+
+  const getAvailableExperts = () => {
+    if (!discussion) return experts;
+    if (discussion.discussion_mode === 'parallel') {
+      return experts.filter(e => discussion.expert_ids.includes(e.id));
+    }
+    // For sequential mode, only show the next expert in order
+    const currentExpertIndex = discussion.expert_ids.findIndex(id => id === selectedExpert);
+    return experts.filter(e => e.id === discussion.expert_ids[currentExpertIndex + 1]);
   };
 
   if (loading) {
@@ -208,11 +229,19 @@ export default function DiscussionView() {
             </div>
           ) : (
             <div className="mb-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Select an Expert</h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium text-gray-900">
+                  {discussion.discussion_mode === 'sequential' ? 'Next Expert' : 'Available Experts'}
+                </h3>
+                <div className="text-sm text-gray-500">
+                  Round {discussion.current_round}
+                </div>
+              </div>
               <ExpertSelector
-                experts={experts}
+                experts={getAvailableExperts()}
                 selectedExpert={selectedExpert}
                 onSelect={setSelectedExpert}
+                mode={discussion.discussion_mode}
               />
             </div>
           )}
@@ -260,13 +289,35 @@ export default function DiscussionView() {
 
           <form onSubmit={handleSendMessage} className="mt-4">
             <div className="flex space-x-3">
+              {discussion.discussion_mode === 'sequential' &&
+               discussion.expert_ids.every(id => 
+                 discussion.messages.some(m => 
+                   m.expert_role === id && m.round === discussion.current_round
+                 )
+               ) && (
+                <button
+                  type="button"
+                  onClick={handleAdvanceRound}
+                  className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                >
+                  Next Round
+                </button>
+              )}
               <input
                 type="text"
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 placeholder="Type your message..."
                 className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                disabled={discussion.status === 'completed' || !selectedExpert}
+                disabled={
+                  discussion.status === 'completed' || 
+                  !selectedExpert || 
+                  (discussion.discussion_mode === 'sequential' && 
+                   discussion.messages.some(m => 
+                     m.expert_role === selectedExpert && 
+                     m.round === discussion.current_round
+                   ))
+                }
               />
               <button
                 type="submit"
