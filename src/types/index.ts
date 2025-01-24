@@ -11,6 +11,17 @@ export interface Message {
   discussion_id: string;
   expert_role: string;
   content: string;
+  round: number;
+  message_refs: Array<{
+    messageId: string;
+    expertId: string;
+    quote: string;
+  }>;
+  metadata: {
+    confidence?: number;
+    agreementLevel?: number;
+    contributionType?: 'primary' | 'supporting' | 'alternative';
+  };
   created_at: string;
   updated_at: string;
 }
@@ -20,7 +31,11 @@ export interface Discussion {
   topic: string;
   description: string;
   status: 'active' | 'completed';
+  expert_ids: string[];
+  discussion_mode: 'sequential' | 'parallel';
+  current_round: number;
   messages: Array<Message & { timestamp: Date }>;
+  metadata: Record<string, any>;
   created_at: string;
   updated_at: string;
 }

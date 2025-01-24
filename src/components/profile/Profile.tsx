@@ -8,7 +8,7 @@ export default function Profile() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showAddKey, setShowAddKey] = useState(false);
-  const [newKey, setNewKey] = useState({ name: '', key: '', provider: 'claude' as const });
+  const [newKey, setNewKey] = useState({ name: '', key: '', provider: 'openai' as const });
   const [validating, setValidating] = useState(false);
 
   useEffect(() => {
@@ -29,13 +29,13 @@ export default function Profile() {
   const handleAddKey = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setValidating(true);
 
     try {
-      setValidating(true);
       const key = await addApiKey(newKey);
       setApiKeys([...apiKeys, key]);
       setShowAddKey(false);
-      setNewKey({ name: '', key: '', provider: 'claude' });
+      setNewKey({ name: '', key: '', provider: 'openai' });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to add API key');
     } finally {
@@ -55,8 +55,10 @@ export default function Profile() {
   const handleToggleKey = async (key: ApiKey) => {
     try {
       const updatedKey = await updateApiKey(key.id, { is_active: !key.is_active });
+      console.log('Key toggle result:', updatedKey);
       setApiKeys(apiKeys.map(k => k.id === key.id ? updatedKey : k));
     } catch (err) {
+      console.error('Failed to toggle key:', err);
       setError('Failed to update API key');
     }
   };
@@ -77,7 +79,7 @@ export default function Profile() {
             <div>
               <h3 className="text-lg font-medium leading-6 text-gray-900">API Keys</h3>
               <p className="mt-1 text-sm text-gray-500">
-                Manage your API keys for Claude and OpenAI
+                Manage your API keys for OpenAI
               </p>
             </div>
             <button
@@ -132,14 +134,13 @@ export default function Profile() {
                 <label htmlFor="provider" className="block text-sm font-medium text-gray-700">
                   Provider
                 </label>
-                <select
+                <input
+                  type="text"
                   id="provider"
-                  value={newKey.provider}
-                  onChange={(e) => setNewKey({ ...newKey, provider: e.target.value as 'openai' })}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                >
-                  <option value="openai">OpenAI</option>
-                </select>
+                  value="OpenAI"
+                  disabled
+                  className="mt-1 block w-full rounded-md border-gray-300 bg-gray-50 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                />
               </div>
               <div className="flex justify-end space-x-3">
                 <button

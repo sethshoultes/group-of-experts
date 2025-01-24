@@ -4,16 +4,19 @@ import type { Discussion } from '../types';
 export async function getDiscussions(): Promise<Discussion[]> {
   const { data, error } = await supabase
     .from('discussions')
-    .select(`
-      *,
-      messages:messages(*)
-    `);
+    .select('*, messages (*)');
 
   if (error) throw error;
   return data.map(discussion => ({
     ...discussion,
     messages: discussion.messages.map((message: any) => ({
       ...message,
+      message_refs: message.message_refs || [],
+      metadata: message.metadata || {
+        confidence: 0.7,
+        agreementLevel: 0.5,
+        contributionType: 'primary'
+      },
       timestamp: new Date(message.created_at)
     }))
   }));
@@ -23,8 +26,7 @@ export async function getDiscussion(id: string): Promise<Discussion> {
   const { data, error } = await supabase
     .from('discussions')
     .select(`
-      *,
-      messages:messages(*)
+      *, messages(*)
     `)
     .eq('id', id)
     .single();
@@ -33,17 +35,38 @@ export async function getDiscussion(id: string): Promise<Discussion> {
   
   return {
     ...data,
+    expert_ids: data.expert_ids || [],
+    discussion_mode: data.discussion_mode || 'sequential',
+    current_round: data.current_round || 1,
+    metadata: data.metadata || {},
     messages: data.messages.map((message: any) => ({
       ...message,
+      round: message.round || 1,
+      message_refs: message.message_refs || [],
+      metadata: message.metadata || {
+        confidence: 0.7,
+        agreementLevel: 0.5,
+        contributionType: 'primary'
+      },
       timestamp: new Date(message.created_at)
     }))
   };
 }
 
-export async function createDiscussion(topic: string, description: string): Promise<Discussion> {
+export async function createDiscussion(
+  topic: string,
+  description: string,
+  expertIds?: string[],
+  discussionMode: 'sequential' | 'parallel' = 'sequential'
+): Promise<Discussion> {
   const { data: { user }, error: userError } = await supabase.auth.getUser();
   if (userError) throw userError;
   if (!user) throw new Error('User not authenticated');
+
+  // Ensure we have valid expert IDs
+  if (!expertIds || expertIds.length === 0) {
+    throw new Error('At least one expert must be selected');
+  }
 
   const { data, error } = await supabase
     .from('discussions')
@@ -51,26 +74,48 @@ export async function createDiscussion(topic: string, description: string): Prom
       user_id: user.id,
       topic,
       description,
-      status: 'active'
-    })
-    .select(`
-      *,
-      messages:messages(*)
-    `)
+      status: 'active',
+      expert_ids: expertIds,
+      discussion_mode: discussionMode,
+      current_round: 1,
+      metadata: {}
+    }).select('*')
     .single();
 
-  if (error) throw error;
+  if (error) {
+    console.error('Create discussion error:', error);
+    throw new Error(error.message);
+  }
 
   return {
     ...data,
-    messages: []
+    messages: [],
+    expert_ids: data.expert_ids || [],
+    discussion_mode: data.discussion_mode || 'sequential',
+    current_round: data.current_round || 1,
+    metadata: data.metadata || {}
   };
+}
+
+export async function updateDiscussionRound(id: string, round: number): Promise<void> {
+  const { error } = await supabase
+    .from('discussions')
+    .update({ 
+      current_round: round,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', id);
+
+  if (error) throw error;
 }
 
 export async function updateDiscussionStatus(id: string, status: 'active' | 'completed'): Promise<void> {
   const { error } = await supabase
     .from('discussions')
-    .update({ status })
+    .update({ 
+      status,
+      updated_at: new Date().toISOString()
+    })
     .eq('id', id);
 
   if (error) throw error;
@@ -103,15 +148,43 @@ export async function deleteDiscussion(id: string): Promise<void> {
 export async function addMessage(
   discussionId: string,
   expertRole: string,
-  content: string
+  content: string,
+  messageRefs: any[] = [],
+  metadata: any = {}
 ): Promise<void> {
+  // Get current discussion to get the round
+  const { data: discussion, error: discussionError } = await supabase
+    .from('discussions')
+    .select('current_round')
+    .eq('id', discussionId)
+    .single();
+
+  if (discussionError) throw discussionError;
+
   const { error } = await supabase
     .from('messages')
     .insert({
       discussion_id: discussionId,
       expert_role: expertRole,
-      content
+      content,
+      round: discussion.current_round,
+      message_refs: messageRefs,
+      metadata,
+      response_order: await getNextResponseOrder(discussionId, discussion.current_round)
     });
 
   if (error) throw error;
+}
+
+async function getNextResponseOrder(discussionId: string, round: number): Promise<number> {
+  const { data, error } = await supabase
+    .from('messages')
+    .select('response_order')
+    .eq('discussion_id', discussionId)
+    .eq('round', round)
+    .order('response_order', { ascending: false })
+    .limit(1);
+
+  if (error) throw error;
+  return data && data.length > 0 ? (data[0].response_order || 0) + 1 : 1;
 }

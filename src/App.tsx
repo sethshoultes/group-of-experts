@@ -9,6 +9,7 @@ import LoginForm from './components/auth/LoginForm';
 import RegisterForm from './components/auth/RegisterForm';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import PublicRoute from './components/auth/PublicRoute';
+import Help from './components/help/Help';
 import Discussions from './components/discussion/Discussions';
 import Profile from './components/profile/Profile';
 import NewDiscussion from './components/discussion/NewDiscussion';
@@ -51,6 +52,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <AdminPanel />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/help"
+              element={
+                <ProtectedRoute>
+                  <Help />
                 </ProtectedRoute>
               }
             />

@@ -1,8 +1,9 @@
-import { Handler } from '@netlify/functions';
+import type { Handler } from '@netlify/functions';
 
 const validateOpenAIKey = async (key: string) => {
   try {
     const response = await fetch('https://api.openai.com/v1/models', {
+      method: 'GET',
       headers: {
         'Authorization': `Bearer ${key}`
       }
@@ -23,11 +24,27 @@ const validateOpenAIKey = async (key: string) => {
   }
 };
 
-export const handler: Handler = async (event) => {
+export default async function handler(event: Parameters<Handler>[0]) {
+  // Handle CORS preflight requests
+  if (event.httpMethod === 'OPTIONS') {
+    return {
+      statusCode: 204,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS'
+      }
+    };
+  }
+
   // Only allow POST requests
   if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      },
       body: JSON.stringify({ error: 'Method not allowed' })
     };
   }
@@ -39,6 +56,10 @@ export const handler: Handler = async (event) => {
     if (!provider || !key) {
       return {
         statusCode: 400,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        },
         body: JSON.stringify({ error: 'Provider and key are required' })
       };
     }
@@ -46,6 +67,10 @@ export const handler: Handler = async (event) => {
     if (provider !== 'openai') {
       return {
         statusCode: 400,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        },
         body: JSON.stringify({ error: 'Invalid provider' })
       };
     }
@@ -56,14 +81,19 @@ export const handler: Handler = async (event) => {
     return {
       statusCode: 200,
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
       },
       body: JSON.stringify(result)
     };
   } catch (error) {
     return {
       statusCode: 500,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      },
       body: JSON.stringify({ error: 'Internal server error' })
     };
   }
-};
+}

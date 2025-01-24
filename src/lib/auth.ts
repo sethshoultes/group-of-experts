@@ -88,22 +88,7 @@ export async function signOut() {
 export async function getCurrentUser() {
   const { data: { user }, error } = await supabase.auth.getUser();
   if (error) throw error;
-  
-  // Check if user is admin
-  if (user) {
-    const { data: adminUser } = await supabase
-      .from('admin_users')
-      .select('*')
-      .eq('user_id', user.id)
-      .single();
-
-    return {
-      ...user,
-      role: adminUser ? 'admin' : 'user'
-    };
-  }
-  
-  return null;
+  return user;
 }
 
 export async function getUserApiKeys(): Promise<ApiKey[]> {
@@ -117,24 +102,28 @@ export async function getUserApiKeys(): Promise<ApiKey[]> {
 }
 
 export async function addApiKey(key: Omit<ApiKey, 'id' | 'userId' | 'createdAt' | 'updatedAt' | 'lastUsed'>) {
-  // Validate the key before adding
-  const validation = await validateApiKey(key.provider, key.key);
-  if (!validation.valid) {
-    throw new Error(validation.error || 'Invalid API key');
+  try {
+    // Validate the key before adding
+    const validation = await validateOpenAIKey(key.key);
+    if (!validation.valid) {
+      throw new Error(validation.error || 'Invalid API key');
+    }
+
+    const { data, error } = await supabase
+      .from('api_keys')
+      .insert({
+        ...key,
+        user_id: (await getCurrentUser())?.id,
+        is_active: true
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  } catch (err) {
+    throw new Error(err instanceof Error ? err.message : 'Failed to add API key');
   }
-
-  const { data, error } = await supabase
-    .from('api_keys')
-    .insert({
-      ...key,
-      user_id: (await getCurrentUser())?.id,
-      is_active: true
-    })
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data;
 }
 
 export async function updateApiKey(id: string, updates: Partial<ApiKey>) {

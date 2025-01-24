@@ -11,11 +11,17 @@ const EXPERT_ICONS = {
 
 interface ExpertSelectorProps {
   experts: ExpertRole[];
-  selectedExpert: string | null;
-  onSelect: (expertId: string) => void;
+  selectedExperts: string[];
+  onSelect: (expertId: string[]) => void;
+  mode?: 'sequential' | 'parallel';
 }
 
-export default function ExpertSelector({ experts, selectedExpert, onSelect }: ExpertSelectorProps) {
+export default function ExpertSelector({
+  experts,
+  selectedExperts,
+  onSelect,
+  mode = 'sequential'
+}: ExpertSelectorProps) {
   if (experts.length === 0) {
     return (
       <div className="rounded-md bg-yellow-50 p-4">
@@ -34,47 +40,55 @@ export default function ExpertSelector({ experts, selectedExpert, onSelect }: Ex
   }
 
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {experts.map((expert) => (
-        <div
-          key={expert.id}
-          className={`relative rounded-lg border p-4 cursor-pointer transition-colors ${
-            selectedExpert === expert.id
-              ? 'border-indigo-600 bg-indigo-50'
-              : 'border-gray-300 hover:border-indigo-400 hover:bg-gray-50'
-          }`}
-          onClick={() => onSelect(expert.id)}
-        >
-          <div className="space-y-3">
-            <div className="flex items-center space-x-3">
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      {experts.map((expert) => {
+        const isSelected = selectedExperts.includes(expert.id);
+        
+        return (
+          <div
+            key={expert.id}
+            className={`relative rounded-lg border p-4 transition-all cursor-pointer ${
+              isSelected
+                ? 'border-indigo-100 bg-indigo-50'
+                : 'border-gray-100 hover:border-indigo-100 hover:bg-gray-50/50'
+            }`}
+            onClick={() => {
+              if (isSelected) {
+                onSelect(selectedExperts.filter(id => id !== expert.id));
+              } else if (selectedExperts.length < 3) {
+                onSelect([...selectedExperts, expert.id]);
+              }
+            }}
+          >
+            <div>
               {(() => {
                 const Icon = EXPERT_ICONS[expert.icon as keyof typeof EXPERT_ICONS];
                 return Icon ? (
-                  <Icon className={`h-6 w-6 ${
-                    selectedExpert === expert.id ? 'text-indigo-600' : 'text-gray-400'
+                  <Icon className={`h-5 w-5 mb-2 ${
+                    isSelected ? 'text-indigo-600' : 'text-gray-400'
                   }`} />
                 ) : null;
               })()}
-              <h3 className="text-lg font-medium text-gray-900">{expert.name}</h3>
-            </div>
-            <p className="text-sm text-gray-500">{expert.description}</p>
-            <div className="flex flex-wrap gap-2">
-              {expert.expertise.map((skill) => (
-                <span
-                  key={skill}
-                  className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                    selectedExpert === expert.id
-                      ? 'bg-indigo-100 text-indigo-800'
-                      : 'bg-gray-100 text-gray-600'
-                  }`}
-                >
-                  {skill}
-                </span>
-              ))}
+              <h3 className="text-base font-semibold text-gray-900">{expert.name}</h3>
+              <p className="mt-1 text-sm text-gray-500 line-clamp-2">{expert.description}</p>
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                {expert.expertise.map((skill) => (
+                  <span
+                    key={skill}
+                    className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                      isSelected
+                        ? 'bg-indigo-100 text-indigo-700'
+                        : 'bg-gray-100 text-gray-600'
+                    }`}
+                  >
+                    {skill}
+                  </span>
+                ))}
+              </div>
             </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

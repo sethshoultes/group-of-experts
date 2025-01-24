@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Send, CheckCircle, XCircle, Loader, Maximize2, Minimize2 } from 'lucide-react';
-import { getDiscussion, updateDiscussionStatus, addMessage } from '../../lib/discussions';
+import { getDiscussion, updateDiscussionStatus, addMessage, updateDiscussionRound } from '../../lib/discussions';
 import { getAvailableExperts, getExpertResponse } from '../../lib/experts';
 import ExpertSelector from './ExpertSelector';
 import type { ExpertRole } from '../../lib/experts/roles';
@@ -19,6 +19,7 @@ export default function DiscussionView() {
   const [selectedExpert, setSelectedExpert] = useState<string | null>(null);
   const [loadingExperts, setLoadingExperts] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [currentRound, setCurrentRound] = useState(1);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -31,8 +32,10 @@ export default function DiscussionView() {
   const loadExperts = async () => {
     try {
       const availableExperts = await getAvailableExperts();
+      console.log('Loaded experts:', availableExperts);
       setExperts(availableExperts);
     } catch (err) {
+      console.error('Failed to load experts:', err);
       setError('Failed to load experts');
     } finally {
       setLoadingExperts(false);
@@ -62,14 +65,24 @@ export default function DiscussionView() {
     }
   };
 
+  const handleAdvanceRound = async () => {
+    if (!discussion || !id) return;
+    try {
+      await updateDiscussionRound(id, discussion.current_round + 1);
+      await loadDiscussion(id);
+    } catch (err) {
+      setError('Failed to advance round');
+    }
+  };
+
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!message.trim() || !id || sending || !selectedExpert) return;
+    if (discussion.status === 'completed') return;
 
     const currentMessage = message;
     setSending(true);
     setError(null);
-    setMessage(''); // Clear input early for better UX
 
     try {
       // Add user message
@@ -83,8 +96,10 @@ export default function DiscussionView() {
       
       // Reload discussion to get the new messages
       await loadDiscussion(id);
+      setMessage(''); // Only clear on success
     } catch (err) {
-      setError('Failed to send message');
+      console.error('Message error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to send message');
     } finally {
       setSending(false);
     }
@@ -114,6 +129,19 @@ export default function DiscussionView() {
 
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
+  };
+
+  const getFilteredExperts = () => {
+    if (!discussion) return experts;
+    if (discussion.discussion_mode === 'parallel') {
+      return experts;
+    }
+    // For sequential mode, only show the next expert in order
+    const currentRoundMessages = discussion.messages.filter(m => m.round === discussion.current_round);
+    const availableExperts = experts.filter(expert => 
+      !currentRoundMessages.some(msg => msg.expert_role === expert.id)
+    );
+    return availableExperts;
   };
 
   if (loading) {
@@ -204,15 +232,19 @@ export default function DiscussionView() {
           
           {loadingExperts ? (
             <div className="flex justify-center py-4">
-              <Loader className="h-6 w-6 animate-spin text-indigo-600" />
+              <div className="animate-spin rounded-full h-6 w-6 border-2 border-indigo-600 border-t-transparent" />
             </div>
           ) : (
             <div className="mb-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Select an Expert</h3>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-base font-medium text-gray-900">Select an Expert</h3>
+                <span className="text-sm text-gray-500">Round {discussion.current_round}</span>
+              </div>
               <ExpertSelector
-                experts={experts}
+                experts={getFilteredExperts()}
                 selectedExpert={selectedExpert}
                 onSelect={setSelectedExpert}
+                mode={discussion.discussion_mode}
               />
             </div>
           )}
@@ -228,19 +260,19 @@ export default function DiscussionView() {
                 <div
                   className={`max-w-[80%] rounded-lg px-4 py-2 ${
                     message.expert_role === 'user'
-                      ? 'bg-indigo-600 text-white'
-                      : 'bg-gray-100 text-gray-900'
+                      ? 'bg-indigo-500 text-white'
+                      : 'bg-gray-50 text-gray-900'
                   }`}
                 >
                   {message.expert_role !== 'user' && (
-                    <div className="text-xs font-medium mb-1 text-indigo-600">
+                    <div className="text-xs font-medium mb-1">
                       {(() => {
                         const expert = experts.find(e => e.id === message.expert_role);
                         return expert ? (
                           <div className="flex items-center space-x-1">
-                            <span className="font-bold text-indigo-700">{expert.name}</span>
-                            <span className="text-indigo-400">•</span>
-                            <span className="text-indigo-500">{expert.title}</span>
+                            <span className="font-bold text-gray-900">{expert.name}</span>
+                            <span className="text-gray-400">•</span>
+                            <span className="text-gray-600">{expert.title}</span>
                           </div>
                         ) : (
                           <span className="text-gray-500">Expert</span>
@@ -259,22 +291,44 @@ export default function DiscussionView() {
           </div>
 
           <form onSubmit={handleSendMessage} className="mt-4">
-            <div className="flex space-x-3">
+            <div className="flex items-center space-x-3 bg-white border-t pt-4">
+              {discussion.discussion_mode === 'sequential' &&
+               discussion.expert_ids.every(id => 
+                 discussion.messages.some(m => 
+                   m.expert_role === id && m.round === discussion.current_round
+                 )
+               ) && (
+                <button
+                  type="button"
+                  onClick={handleAdvanceRound}
+                  className="inline-flex items-center px-3 py-1.5 border border-gray-200 rounded-full text-sm font-medium text-gray-600 bg-white hover:bg-gray-50"
+                >
+                  Next Round
+                </button>
+              )}
               <input
                 type="text"
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 placeholder="Type your message..."
-                className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                disabled={discussion.status === 'completed' || !selectedExpert}
+                className="flex-1 rounded-full border-gray-200 bg-gray-50 px-4 py-2 focus:bg-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                disabled={
+                  discussion.status === 'completed' || 
+                  !selectedExpert || 
+                  (discussion.discussion_mode === 'sequential' && 
+                   discussion.messages.some(m => 
+                     m.expert_role === selectedExpert && 
+                     m.round === discussion.current_round
+                   ))
+                }
               />
               <button
                 type="submit"
                 disabled={!message.trim() || sending || discussion.status === 'completed' || !selectedExpert}
-                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+                className="inline-flex items-center p-2 text-indigo-500 hover:text-indigo-600 focus:outline-none disabled:opacity-50 disabled:hover:text-indigo-500"
               >
                 {sending ? (
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-indigo-500 border-t-transparent"></div>
                 ) : (
                   <Send className="h-5 w-5" />
                 )}
